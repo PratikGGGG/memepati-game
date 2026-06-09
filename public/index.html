@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaun Banega Memepati</title>
+    <style>
+        body {
+            margin: 0; background: radial-gradient(circle, #220044 0%, #000011 100%);
+            color: #fff; font-family: sans-serif; display: flex;
+            justify-content: center; align-items: center; min-height: 100vh; text-align: center;
+        }
+        .panel {
+            width: 90%; max-width: 700px; background: rgba(0,0,0,0.8);
+            border: 3px solid #ffcc00; border-radius: 12px; padding: 30px; box-shadow: 0 0 30px #ffcc0044;
+        }
+        h1 { color: #ffcc00; margin-bottom: 25px; text-shadow: 0 0 10px #ffcc00; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        @media(max-width:550px) { .grid { grid-template-columns: 1fr; } }
+        button {
+            background: #111; border: 2px solid #ffcc00; color: #fff; padding: 15px;
+            font-size: 1.1rem; border-radius: 8px; cursor: pointer; transition: 0.2s; text-align: left;
+        }
+        button:hover { background: #ffcc00; color: #000; font-weight: bold; }
+        #meme-stage {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 100; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .meme-window { max-width: 450px; border: 4px solid #fff; border-radius: 8px; margin: 20px 0; }
+        .meme-window img { width: 100%; height: auto; display: block; }
+    </style>
+</head>
+<body>
+
+    <!-- Home Screen Module Layer -->
+    <div class="panel" id="screen-home">
+        <h1>Kaun Banega Memepati</h1>
+        <p style="color: #00ffcc; font-size: 1.2rem; font-weight: bold;">SELECT YOUR LANGUAGE PIPELINE:</p>
+        <div class="grid">
+            <button onclick="launchGame('hindi')">1. Jay Bharat Jay Bharat - Hindi 🇮🇳</button>
+            <button onclick="launchGame('marathi')">2. Amchi maati amchi manasa - Marathi🚩</button>
+            <button onclick="launchGame('english')">3. angrej chale gaye, English chod gaye - English 🇬🇧</button>
+            <button onclick="launchGame('gujarati')">4. gabha khelne chalo - Gujarati 🕺</button>
+        </div>
+    </div>
+
+    <!-- Live Arena Gameplay Dashboard Panel -->
+    <div class="panel" id="screen-arena" style="display: none;">
+        <div style="color:#00ffcc; font-weight:bold; margin-bottom:15px;" id="hud-text">Question: 1/10</div>
+        <div style="background:#09091c; border:2px solid #0055ff; padding:20px; border-radius:8px; font-size:1.3rem; margin-bottom:20px;" id="question-box"></div>
+        <div class="grid" id="options-box"></div>
+    </div>
+
+    <!-- Dedicated Original Meme Rendering Intermission Stage -->
+    <div id="meme-stage">
+        <h2 id="evaluation-heading" style="font-size: 2rem;">RESULT</h2>
+        <div class="meme-window">
+            <img id="original-meme-element" src="" alt="Original Meme Image">
+        </div>
+        <button onclick="advanceTurn()" style="text-align:center; padding: 12px 40px; background:#ffcc00; color:#000;">Continue ➡️</button>
+    </div>
+
+<script>
+let deck = [], correctPool = [], wrongPool = [];
+let currentTurn = 0, points = 0;
+
+async function launchGame(languageSelection) {
+    const response = await fetch(`/api/game-setup?lang=${languageSelection}`);
+    const data = await response.json();
+    
+    deck = data.questions;
+    correctPool = data.correctMemePool;
+    wrongPool = data.wrongMemePool;
+    
+    currentTurn = 0; points = 0;
+    document.getElementById('screen-home').style.display = 'none';
+    document.getElementById('screen-arena').style.display = 'block';
+    drawRound();
+}
+
+function drawRound() {
+    document.getElementById('hud-text').textContent = `Question: ${currentTurn + 1}/10 | Score: ${points}`;
+    const qData = deck[currentTurn];
+    document.getElementById('question-box').textContent = qData.q;
+    
+    const optionsBox = document.getElementById('options-box');
+    optionsBox.innerHTML = '';
+    qData.options.forEach((opt, idx) => {
+        optionsBox.innerHTML += `<button onclick="submitChoice(${idx})">${['A','B','C','D'][idx]}: ${opt}</button>`;
+    });
+}
+
+function submitChoice(selected) {
+    const qData = deck[currentTurn];
+    const header = document.getElementById('evaluation-heading');
+    const imageNode = document.getElementById('original-meme-element');
+    
+    if (selected === qData.correct) {
+        points++;
+        header.textContent = "CORRECT OPTION! 🎉"; header.style.color = "#00ff00";
+        imageNode.src = correctPool[currentTurn % correctPool.length];
+    } else {
+        header.textContent = "WRONG OPTION! ❌"; header.style.color = "#ff3333";
+        imageNode.src = wrongPool[currentTurn % wrongPool.length];
+    }
+    document.getElementById('meme-stage').style.display = 'flex';
+}
+
+function advanceTurn() {
+    document.getElementById('meme-stage').style.display = 'none';
+    currentTurn++;
+    if (currentTurn < 10) {
+        drawRound();
+    } else {
+        document.getElementById('screen-arena').style.display = 'none';
+        document.getElementById('screen-home').style.display = 'block';
+        alert(`Session Complete! Final Score: ${points}/10`);
+    }
+}
+</script>
+</body>
+</html>
